@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Light mode — CFA warm white */
+  --cfa-surface: #FFF5F7;
+  --cfa-card: #FFFFFF;
+  --cfa-muted: #FDE8EC;
+  --cfa-border: #F0C8D0;
+  --cfa-ink: #1A0A0E;
+  --cfa-ink-soft: #7A3540;
+  --cfa-ink-dim: #A05060;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark mode — CFA deep maroon */
+    --cfa-surface: #1A0A0E;
+    --cfa-card: #2D1318;
+    --cfa-muted: #3D1A22;
+    --cfa-border: #5A2830;
+    --cfa-ink: #FFF5F7;
+    --cfa-ink-soft: #C4909A;
+    --cfa-ink-dim: #8A5560;
+  }
+}
+
+body {
+  background-color: var(--cfa-surface);
+  color: var(--cfa-ink);
+}
+
+select option {
+  background-color: var(--cfa-muted);
+  color: var(--cfa-ink);
+}
+
+input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  input[type='date']::-webkit-calendar-picker-indicator {
+    filter: invert(0.7);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
