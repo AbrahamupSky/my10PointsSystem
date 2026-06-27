@@ -30,7 +30,7 @@ interface Bounty {
   active: number
 }
 
-type ModalType = 'award' | 'deduct' | 'gift_exchange' | 'bounty'
+type ModalType = 'award' | 'deduct' | 'forgiveness' | 'gift_exchange' | 'bounty'
 
 interface PointsModalProps {
   isOpen: boolean
@@ -122,6 +122,12 @@ export default function PointsModal({
       }
       body.category_id = categoryId ? Number(categoryId) : undefined
       body.points = categoryId && selectedCategory ? selectedCategory.points_value : Number(points)
+    } else if (type === 'forgiveness') {
+      if (!points || Number(points) <= 0) {
+        setError('Please enter the points to forgive')
+        return
+      }
+      body.points = Number(points)
     } else if (type === 'gift_exchange') {
       if (!giftId) {
         setError('Please select a gift')
@@ -180,8 +186,8 @@ export default function PointsModal({
           {/* Transaction Type */}
           <div>
             <label className="block text-sm font-medium text-cfa-ink-soft mb-2">Transaction Type</label>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {(['award', 'deduct', 'gift_exchange', 'bounty'] as ModalType[]).map((t) => (
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+              {(['award', 'deduct', 'forgiveness', 'gift_exchange', 'bounty'] as ModalType[]).map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -192,17 +198,19 @@ export default function PointsModal({
                     setBountyId('')
                     setPoints('')
                   }}
-                  className={`px-3 py-2 rounded-lg text-xs font-semibold capitalize transition-colors border ${
+                  className={`px-2 py-2 rounded-lg text-xs font-semibold transition-colors border ${
                     type === t
                       ? t === 'award' || t === 'bounty'
                         ? 'bg-green-600 border-green-500 text-white'
                         : t === 'deduct'
                         ? 'bg-red-600 border-red-500 text-white'
+                        : t === 'forgiveness'
+                        ? 'bg-teal-600 border-teal-500 text-white'
                         : 'bg-purple-600 border-purple-500 text-white'
                       : 'bg-cfa-muted border-cfa-border text-cfa-ink-soft hover:text-cfa-ink hover:bg-cfa-border'
                   }`}
                 >
-                  {t === 'gift_exchange' ? 'Gift' : t === 'bounty' ? 'Bounty' : t.charAt(0).toUpperCase() + t.slice(1)}
+                  {t === 'gift_exchange' ? 'Gift' : t === 'bounty' ? 'Bounty' : t === 'forgiveness' ? 'Forgive' : t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}
             </div>
@@ -266,6 +274,26 @@ export default function PointsModal({
                 />
               </div>
             </>
+          )}
+
+          {/* Forgiveness */}
+          {type === 'forgiveness' && (
+            <div className="space-y-3">
+              <div className="bg-teal-500/10 border border-teal-500/20 rounded-lg px-3 py-2.5 text-teal-700 dark:text-teal-400 text-xs">
+                Forgiveness restores points to the employee&apos;s current balance <strong>and</strong> adds them to their lifetime total — use this when a penalty is no longer warranted.
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-cfa-ink-soft mb-1">Points to Forgive</label>
+                <input
+                  type="number"
+                  value={points}
+                  onChange={(e) => setPoints(e.target.value)}
+                  min="1"
+                  placeholder="e.g. 10"
+                  className="w-full bg-cfa-muted border border-cfa-border rounded-lg px-3 py-2 text-cfa-ink text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+            </div>
           )}
 
           {/* Gift Exchange */}

@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import TierBadge from '@/components/TierBadge'
 import PointsModal from '@/components/PointsModal'
+import ImportModal from '@/components/ImportModal'
 import { useSession } from 'next-auth/react'
+import { sileo } from 'sileo'
 
 interface Employee {
   id: number
@@ -24,6 +26,7 @@ export default function EmployeesPage() {
   const [departmentFilter, setDepartmentFilter] = useState('')
   const [tierFilter, setTierFilter] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | undefined>()
 
   const user = session?.user as { role?: string } | undefined
@@ -67,13 +70,24 @@ export default function EmployeesPage() {
     return matchSearch && matchDept && matchTier
   })
 
-  async function handleDelete(id: number, name: string) {
-    if (!confirm(`Delete employee "${name}"? This will also delete all their transactions.`)) return
-
-    const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' })
-    if (res.ok) {
-      fetchEmployees()
-    }
+  function handleDelete(id: number, name: string) {
+    sileo.action({
+      title: `Delete "${name}"?`,
+      description: 'This will also delete all their transactions.',
+      duration: null,
+      button: {
+        title: 'Delete',
+        onClick: async () => {
+          const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' })
+          if (res.ok) {
+            fetchEmployees()
+            sileo.success({ title: 'Deleted', description: `${name} has been removed.` })
+          } else {
+            sileo.error({ title: 'Error', description: 'Failed to delete employee.' })
+          }
+        },
+      },
+    })
   }
 
   function openAwardModal(employeeId: number) {
@@ -98,15 +112,26 @@ export default function EmployeesPage() {
           <p className="text-cfa-ink-soft text-sm mt-0.5">{employees.length} total employees</p>
         </div>
         {canManage && (
-          <Link
-            href="/employees/new"
-            className="flex items-center gap-2 px-4 py-2 bg-cfa-red hover:bg-cfa-red-dark text-white rounded-lg text-sm font-medium transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Employee
-          </Link>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setImportOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-cfa-muted hover:bg-cfa-border text-cfa-ink rounded-lg text-sm font-medium transition-colors border border-cfa-border"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              Import Roster
+            </button>
+            <Link
+              href="/employees/new"
+              className="flex items-center gap-2 px-4 py-2 bg-cfa-red hover:bg-cfa-red-dark text-white rounded-lg text-sm font-medium transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Employee
+            </Link>
+          </div>
         )}
       </div>
 
@@ -241,6 +266,12 @@ export default function EmployeesPage() {
         }}
         onSuccess={fetchEmployees}
         defaultEmployeeId={selectedEmployeeId}
+      />
+
+      <ImportModal
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        onSuccess={fetchEmployees}
       />
     </div>
   )

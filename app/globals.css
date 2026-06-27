@@ -15,14 +15,14 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Dark mode — CFA deep maroon */
-    --cfa-surface: #1A0A0E;
-    --cfa-card: #2D1318;
-    --cfa-muted: #3D1A22;
-    --cfa-border: #5A2830;
-    --cfa-ink: #FFF5F7;
-    --cfa-ink-soft: #C4909A;
-    --cfa-ink-dim: #8A5560;
+    /* Dark mode — Apple HIG system colors */
+    --cfa-surface: #000000;    /* systemBackground */
+    --cfa-card: #1C1C1E;      /* secondarySystemBackground */
+    --cfa-muted: #2C2C2E;     /* tertiarySystemBackground */
+    --cfa-border: #3A3A3C;    /* opaqueSeparator */
+    --cfa-ink: #FFFFFF;        /* label */
+    --cfa-ink-soft: #8E8E93;  /* systemGray / secondary label */
+    --cfa-ink-dim: #636366;   /* systemGray2 / tertiary label */
   }
 }
 

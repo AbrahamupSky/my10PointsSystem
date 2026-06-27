@@ -1,8 +1,4 @@
-# My10 Points System — Session Context
-
-## What was built
-
-A full-stack Next.js 14 (App Router) employee points/rewards system, built from scratch in `/home/abrahamup/dev/My10PointsApp`. The app compiles cleanly and is ready to run.
+# My10 Points System — Developer Context
 
 ## How to start
 
@@ -21,35 +17,44 @@ The SQLite database is auto-created at `data/my10points.db` on first run.
 
 ## Tech stack
 
-- **Next.js 14.2.5** — App Router, TypeScript
-- **SQLite** via `better-sqlite3` (database at `data/my10points.db`)
-- **NextAuth v4** — JWT sessions, credentials provider
-- **Tailwind CSS** — CFA branding, `darkMode: 'media'` (follows system/iOS theme automatically)
-- **bcryptjs** — password hashing
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 14.2.5 — App Router, TypeScript |
+| Database | SQLite via `better-sqlite3` (`data/my10points.db`) |
+| Auth | NextAuth v4 — JWT sessions, credentials provider |
+| Styling | Tailwind CSS — CFA brand palette, `darkMode: 'media'` |
+| Notifications | Sileo — `sileo.action()`, `.success()`, `.error()` |
+| Password hashing | bcryptjs |
 
 ---
 
-## Features implemented
+## Features
 
-| Feature | Status |
-|---------|--------|
-| Login page | Done |
-| Dashboard with stats + top employees | Done |
-| Employees list (search, filter by dept/tier) | Done |
-| Add employee | Done |
-| Employee detail + tier progress bar | Done |
-| Categories (award/deduct task types, editable) | Done |
-| Gifts with point costs (add/edit/toggle) | Done |
-| Bounties (special point opportunities + deadlines) | Done |
-| Transactions logbook (award, deduct, gift exchange, bounty) | Done |
-| Lifetime points system (never decreases) | Done |
-| Tier based on lifetime points (not current) | Done |
-| Admin can edit/delete transaction log | Done |
-| Role-based access (admin / manager / viewer) | Done |
-| Mobile-friendly (bottom nav on mobile) | Done |
-| CFA branding (Chick-fil-A red `#E4002B`, warm white/maroon palette) | Done |
-| Auto light/dark mode (follows iOS/system `prefers-color-scheme`) | Done |
-| CFA logo in sidebar + favicon (`public/cfa-logo.png` / `app/icon.png`) | Done |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Login page | Done | |
+| Dashboard — stats + top employees leaderboard | Done | |
+| Employees list (search, filter by dept/tier) | Done | |
+| Add employee (manual) | Done | |
+| Roster CSV import (bulk add with preview) | Done | FOH/BOH color-coded; drag-and-drop + sample download |
+| Employee detail + tier progress bar | Done | |
+| Categories (award/deduct task types) | Done | |
+| Gifts with point costs | Done | |
+| Bounties (special opportunities + deadlines) | Done | |
+| Transactions — award, deduct, gift exchange, bounty | Done | |
+| Debt Forgiveness transaction type | Done | Restores current + lifetime points |
+| Lifetime points (never decreases) | Done | |
+| Tier system based on lifetime points only | Done | |
+| Admin can edit/delete transactions | Done | |
+| Role-based access (admin / manager / viewer) | Done | Enforced on both UI and API |
+| User management (admin creates accounts) | Done | `/register` page, `/api/users` route |
+| Toast notifications (Sileo) | Done | Replaces all browser `confirm()` dialogs |
+| Mobile slide-in drawer navigation | Done | Animated; hamburger header on mobile |
+| Desktop persistent sidebar | Done | Unchanged from original |
+| Admin-only "Users" nav link | Done | Hidden for manager/viewer roles |
+| Apple HIG dark mode palette | Done | Exact system color values |
+| Auto light/dark (follows OS) | Done | `prefers-color-scheme` only, no manual toggle |
+| CFA branding | Done | Logo in sidebar, `#E4002B` red accent |
 
 ---
 
@@ -57,23 +62,108 @@ The SQLite database is auto-created at `data/my10points.db` on first run.
 
 | Role | Permissions |
 |------|-------------|
-| `admin` | Full access — can edit/delete transactions, manage users |
-| `manager` | Can award points, add employees, manage categories/gifts/bounties |
+| `admin` | Full access — edit/delete transactions, create/manage users, all pages |
+| `manager` | Award points, add/import employees, manage categories/gifts/bounties |
 | `viewer` | Read-only access to all pages |
+
+Role is stored in JWT + session. API routes check `session.user.role` server-side — the UI hiding buttons is secondary.
 
 ---
 
-## Tier thresholds (based on lifetime points only)
+## Transaction types
 
-| Tier | Lifetime Points |
-|------|----------------|
-| Bronze | 0 – 999 |
-| Silver | 1,000 – 2,999 |
-| Gold | 3,000 – 5,999 |
-| Platinum | 6,000 – 9,999 |
-| Diamond | 10,000+ |
+| Type | `current_points` | `lifetime_points` | Notes |
+|------|-----------------|-------------------|-------|
+| `award` | + points | + points | Uses category or custom value |
+| `deduct` | − points | no change | Uses category or custom value |
+| `gift_exchange` | − cost | no change | Cost pulled from gift record |
+| `bounty` | + reward | + reward | Reward pulled from bounty record |
+| `forgiveness` | + points | + points | Explicitly restores both; teal badge |
 
-Lifetime points **never decrease** — gift exchanges and deductions only reduce `current_points`.
+When a transaction is **deleted**, the points effect is fully reversed (including lifetime for `award`, `bounty`, `forgiveness`).
+
+---
+
+## Notifications (Sileo)
+
+`<Toaster position="top-center" theme="system" />` is mounted once in `app/layout.tsx`.
+
+Usage pattern for destructive actions:
+```ts
+sileo.action({
+  title: 'Delete X?',
+  description: 'This cannot be undone.',
+  duration: null,          // stays until dismissed or button clicked
+  button: {
+    title: 'Delete',
+    onClick: async () => {
+      const res = await fetch(...)
+      if (res.ok) sileo.success({ title: 'Deleted' })
+      else sileo.error({ title: 'Error', description: '...' })
+    },
+  },
+})
+```
+
+Files that use Sileo: `employees/page.tsx`, `transactions/page.tsx`, `categories/page.tsx`, `gifts/page.tsx`, `bounties/page.tsx`, `components/ImportModal.tsx`.
+
+---
+
+## Mobile navigation
+
+Replaced bottom tab bar with a **slide-in left drawer**:
+
+- `md:hidden` top header bar: hamburger button (left) + "My10 Points" title (center) + user avatar (right)
+- Drawer uses two states to animate correctly without an always-on overlay:
+  - `drawerMounted` — controls whether the drawer is in the DOM
+  - `drawerVisible` — controls the CSS transition classes (`translate-x-0` vs `-translate-x-full`)
+- Open: `setDrawerMounted(true)` → `requestAnimationFrame(() => setDrawerVisible(true))`
+- Close: `setDrawerVisible(false)` → `setTimeout(() => setDrawerMounted(false), 300)`
+- Backdrop: `opacity-0 → opacity-100` with `duration-300`
+
+Desktop sidebar is unchanged.
+
+---
+
+## Dark mode — Apple HIG colors
+
+`app/globals.css` dark mode block uses exact Apple system color values:
+
+```css
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cfa-surface:   #000000;   /* systemBackground */
+    --cfa-card:      #1C1C1E;   /* secondarySystemBackground */
+    --cfa-muted:     #2C2C2E;   /* tertiarySystemBackground */
+    --cfa-border:    #3A3A3C;   /* opaqueSeparator */
+    --cfa-ink:       #FFFFFF;   /* label */
+    --cfa-ink-soft:  #8E8E93;   /* systemGray */
+    --cfa-ink-dim:   #636366;   /* systemGray2 */
+  }
+}
+```
+
+Light mode retains CFA warm-white/pink palette.
+
+---
+
+## CSV roster import
+
+- **UI:** `components/ImportModal.tsx` — drag-and-drop zone → parse → preview table → confirm
+- **API:** `POST /api/employees/import` — bulk insert in a single SQLite transaction; returns `{ imported, skipped }`
+- **Parser:** client-side, handles quoted fields, flexible headers (`name`/`full name`/`employee name`, `dept`/`department`, `email`/`email address`)
+- **Required column:** `Name`. `Email` and `Department` are optional.
+- **Sample CSV** is downloadable from the dialog
+
+---
+
+## User management
+
+- **Page:** `app/register/page.tsx` — admin-only; redirects non-admins to `/`
+- **API:** `GET /api/users` (list, admin only) + `POST /api/users` (create, admin only)
+- **Nav:** "Users" link appears under an "Admin" section in the sidebar/drawer, only when `role === 'admin'`
+- **Roles available on create:** `viewer`, `manager`, `admin`
+- Password minimum: 6 characters; hashed with bcrypt (cost 10)
 
 ---
 
@@ -82,11 +172,13 @@ Lifetime points **never decrease** — gift exchanges and deductions only reduce
 ```
 My10PointsApp/
 ├── app/
-│   ├── page.tsx                  # Dashboard
-│   ├── layout.tsx                # Root layout + nav
+│   ├── page.tsx                      # Dashboard
+│   ├── layout.tsx                    # Root layout + <Toaster>
+│   ├── globals.css                   # CSS variables + Apple dark mode
 │   ├── login/page.tsx
+│   ├── register/page.tsx             # Admin-only user management
 │   ├── employees/
-│   │   ├── page.tsx
+│   │   ├── page.tsx                  # List + "Import Roster" button
 │   │   ├── new/page.tsx
 │   │   └── [id]/page.tsx
 │   ├── categories/page.tsx
@@ -96,49 +188,42 @@ My10PointsApp/
 │   └── api/
 │       ├── auth/[...nextauth]/route.ts
 │       ├── dashboard/route.ts
-│       ├── employees/route.ts + [id]/route.ts
+│       ├── users/route.ts            # GET + POST (admin only)
+│       ├── employees/
+│       │   ├── route.ts
+│       │   ├── [id]/route.ts
+│       │   └── import/route.ts       # Bulk CSV insert
 │       ├── categories/route.ts + [id]/route.ts
 │       ├── gifts/route.ts + [id]/route.ts
 │       ├── bounties/route.ts + [id]/route.ts
 │       └── transactions/route.ts + [id]/route.ts
 ├── components/
-│   ├── Navigation.tsx            # Sidebar (desktop) + bottom nav (mobile), CFA logo
+│   ├── Navigation.tsx                # Desktop sidebar + mobile drawer
 │   ├── TierBadge.tsx
-│   ├── PointsModal.tsx           # Award/deduct/gift/bounty modal
-│   ├── ThemeProvider.tsx         # Passthrough only (theme handled by CSS media query)
-│   ├── ThemeToggle.tsx           # Returns null (no manual toggle needed)
+│   ├── PointsModal.tsx               # award/deduct/forgiveness/gift/bounty
+│   ├── ImportModal.tsx               # CSV import with drag-and-drop preview
 │   └── SessionProviderWrapper.tsx
 ├── lib/
-│   ├── db.ts                     # SQLite init + schema (SERVER ONLY)
-│   ├── tiers.ts                  # getTier() pure function (safe for client)
-│   ├── auth.ts                   # NextAuth config
+│   ├── db.ts                         # SQLite init + schema (SERVER ONLY)
+│   ├── tiers.ts                      # getTier() — safe for client components
+│   ├── auth.ts                       # NextAuth config (role in JWT + session)
 │   └── types.ts
-├── middleware.ts                 # Protects all routes except /login
-├── .env.local                    # NEXTAUTH_SECRET + NEXTAUTH_URL
-├── public/cfa-logo.png           # Real CFA logo (700×394px), used in sidebar
-├── app/icon.png                  # Same image, used as browser favicon (Next.js auto-favicon)
-├── app/globals.css               # CSS variables for CFA palette + prefers-color-scheme dark
-└── data/my10points.db            # Auto-created on first run
+├── middleware.ts                     # Protects all routes except /login + /api/auth
+├── tailwind.config.ts                # darkMode: 'media', cfa-* tokens
+├── public/cfa-logo.png
+└── data/my10points.db                # Auto-created on first run
 ```
 
 ---
 
 ## Key architecture notes
 
-- `lib/tiers.ts` contains the pure `getTier()` function — safe to import in client components
-- `lib/db.ts` is **server-only** (imports `better-sqlite3`) — never import in `'use client'` files
-- The database is initialized and seeded (admin user + 7 default categories) automatically on first API call
-- Transactions are atomic — points update and transaction insert happen in a single SQLite transaction
-
----
-
-## Theming
-
-- **Color palette**: Chick-fil-A brand red `#E4002B`, warm white/pinks (light), deep maroons (dark)
-- **Strategy**: `darkMode: 'media'` in `tailwind.config.ts` — pure CSS, no JS class toggling
-- **CSS variables** in `app/globals.css`: `--cfa-surface`, `--cfa-card`, `--cfa-muted`, `--cfa-border`, `--cfa-ink`, `--cfa-ink-soft`, `--cfa-ink-dim` — all swap automatically via `@media (prefers-color-scheme: dark)`
-- **Tailwind tokens**: `cfa-red`, `cfa-surface`, `cfa-card`, etc. — reference the CSS variables
-- **No manual toggle** — app follows iPhone/system appearance setting automatically
+- `lib/db.ts` is **server-only** — never import in `'use client'` files
+- `lib/tiers.ts` is a pure function — safe to import in client components
+- All points mutations are wrapped in a `db.transaction()` — atomic, no partial updates
+- Session carries `id` and `role` via NextAuth JWT callbacks in `lib/auth.ts`
+- API routes always check `getServerSession(authOptions)` before touching the DB
+- `middleware.ts` protects all routes except `/login` and `/api/auth/**`
 
 ---
 
@@ -156,13 +241,13 @@ transactions (id, employee_id, type, category_id, gift_id, bounty_id, points, no
 
 ---
 
-## Possible next steps (not yet implemented)
+## Possible next steps
 
-- User management page (add/edit/delete users, change roles)
+- Edit or delete existing user accounts (currently only creation is supported)
 - Export transactions to CSV
 - Email notifications when points are awarded
 - Employee self-service portal (view own points/history)
 - Charts/analytics on the dashboard (point trends over time)
-- Multi-language support (app was originally described in Spanish)
 - Password change functionality
-- Profile picture support for employees
+- Profile pictures for employees
+- Multi-language support

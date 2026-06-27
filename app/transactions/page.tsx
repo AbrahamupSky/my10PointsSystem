@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import PointsModal from '@/components/PointsModal'
+import { sileo } from 'sileo'
 
 interface Transaction {
   id: number
@@ -86,6 +87,7 @@ export default function TransactionsPage() {
     if (tx.type === 'deduct') return tx.category_name || 'Deduction'
     if (tx.type === 'gift_exchange') return tx.gift_name ? `Gift: ${tx.gift_name}` : 'Gift Exchange'
     if (tx.type === 'bounty') return tx.bounty_title ? `Bounty: ${tx.bounty_title}` : 'Bounty'
+    if (tx.type === 'forgiveness') return 'Debt Forgiveness'
     return tx.type
   }
 
@@ -95,16 +97,29 @@ export default function TransactionsPage() {
       deduct: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700',
       gift_exchange: 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-700',
       bounty: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-700',
+      forgiveness: 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400 dark:border-teal-700',
     }
     return styles[type] || 'bg-cfa-muted text-cfa-ink-soft border-cfa-border'
   }
 
-  async function handleDelete(id: number) {
-    if (!confirm('Delete this transaction? This will reverse the points change.')) return
-    const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' })
-    if (res.ok) {
-      setTransactions((prev) => prev.filter((tx) => tx.id !== id))
-    }
+  function handleDelete(id: number) {
+    sileo.action({
+      title: 'Delete transaction?',
+      description: 'This will reverse the points change.',
+      duration: null,
+      button: {
+        title: 'Delete',
+        onClick: async () => {
+          const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' })
+          if (res.ok) {
+            setTransactions((prev) => prev.filter((tx) => tx.id !== id))
+            sileo.success({ title: 'Deleted', description: 'Transaction has been reversed.' })
+          } else {
+            sileo.error({ title: 'Error', description: 'Failed to delete transaction.' })
+          }
+        },
+      },
+    })
   }
 
   function startEdit(tx: Transaction) {
@@ -213,7 +228,7 @@ export default function TransactionsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full border capitalize ${getTypeBadge(tx.type)}`}>
-                        {tx.type === 'gift_exchange' ? 'Gift' : tx.type}
+                        {tx.type === 'gift_exchange' ? 'Gift' : tx.type === 'forgiveness' ? 'Forgive' : tx.type}
                       </span>
                     </td>
                     <td className="px-4 py-3 max-w-48">
@@ -273,7 +288,7 @@ export default function TransactionsPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-cfa-ink text-sm font-medium">{tx.employee_name}</span>
                       <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border capitalize ${getTypeBadge(tx.type)}`}>
-                        {tx.type === 'gift_exchange' ? 'Gift' : tx.type}
+                        {tx.type === 'gift_exchange' ? 'Gift' : tx.type === 'forgiveness' ? 'Forgive' : tx.type}
                       </span>
                     </div>
                     <p className="text-cfa-ink-soft text-xs mt-1">{getTransactionLabel(tx)}</p>

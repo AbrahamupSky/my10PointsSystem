@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import Navigation from '@/components/Navigation'
 import SessionProviderWrapper from '@/components/SessionProviderWrapper'
+import { Toaster } from 'sileo'
 
 export const metadata: Metadata = {
   title: 'My10 Points System',
@@ -21,11 +22,12 @@ export default async function RootLayout({
     <html lang="en">
       <body className="bg-cfa-surface text-cfa-ink min-h-screen">
         <SessionProviderWrapper session={session}>
+          <Toaster position="top-center" theme="system" />
           {session ? (
             <div className="flex min-h-screen">
               <Navigation session={session} />
               <main className="flex-1 md:ml-64 pb-20 md:pb-0">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 pt-20 md:pt-6">
                   {children}
                 </div>
               </main>

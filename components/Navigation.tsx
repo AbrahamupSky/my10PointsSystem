@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -67,36 +68,70 @@ const navLinks = [
   },
 ]
 
+const adminNavLinks = [
+  {
+    href: '/register',
+    label: 'Users',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+      </svg>
+    ),
+  },
+]
+
 export default function Navigation({ session }: NavigationProps) {
   const pathname = usePathname()
+  const [drawerMounted, setDrawerMounted] = useState(false)
+  const [drawerVisible, setDrawerVisible] = useState(false)
 
   const user = session?.user as { name?: string | null; email?: string | null; role?: string } | undefined
+  const isAdmin = user?.role === 'admin'
 
-  return (
+  function openDrawer() {
+    setDrawerMounted(true)
+    requestAnimationFrame(() => setDrawerVisible(true))
+  }
+
+  function closeDrawer() {
+    setDrawerVisible(false)
+    setTimeout(() => setDrawerMounted(false), 300)
+  }
+
+  const desktopAndDrawerLinks = (
     <>
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-cfa-card border-r border-cfa-border">
-        {/* CFA Logo */}
-        <div className="flex items-center justify-center px-6 py-4 border-b border-cfa-border">
-          <Image
-            src="/cfa-logo.png"
-            alt="Chick-fil-A"
-            width={160}
-            height={90}
-            className="object-contain"
-            priority
-          />
-        </div>
+      {navLinks.map((link) => {
+        const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
+        return (
+          <Link
+            key={link.href}
+            href={link.href}
+            onClick={closeDrawer}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-cfa-red text-white'
+                : 'text-cfa-ink-soft hover:text-cfa-ink hover:bg-cfa-muted'
+            }`}
+          >
+            {link.icon}
+            {link.label}
+          </Link>
+        )
+      })}
 
-        {/* Navigation Links */}
-        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
-          {navLinks.map((link) => {
-            const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
+      {isAdmin && (
+        <>
+          <div className="pt-3 pb-1">
+            <p className="px-3 text-[10px] font-semibold uppercase tracking-wider text-cfa-ink-dim">Admin</p>
+          </div>
+          {adminNavLinks.map((link) => {
+            const isActive = pathname === link.href || pathname.startsWith(link.href)
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                onClick={closeDrawer}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                   isActive
                     ? 'bg-cfa-red text-white'
                     : 'text-cfa-ink-soft hover:text-cfa-ink hover:bg-cfa-muted'
@@ -107,15 +142,27 @@ export default function Navigation({ session }: NavigationProps) {
               </Link>
             )
           })}
+        </>
+      )}
+    </>
+  )
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-cfa-card border-r border-cfa-border">
+        <div className="flex items-center justify-center px-6 py-4 border-b border-cfa-border">
+          <Image src="/cfa-logo.png" alt="Chick-fil-A" width={160} height={90} className="object-contain" priority />
+        </div>
+
+        <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+          {desktopAndDrawerLinks}
         </nav>
 
-        {/* User Info */}
         <div className="px-4 py-4 border-t border-cfa-border">
           <div className="flex items-center gap-3 px-3 py-2 mb-2">
             <div className="w-8 h-8 rounded-full bg-cfa-red flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-semibold text-sm">
-                {user?.name?.charAt(0).toUpperCase() || 'U'}
-              </span>
+              <span className="text-white font-semibold text-sm">{user?.name?.charAt(0).toUpperCase() || 'U'}</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-cfa-ink text-sm font-medium truncate">{user?.name}</p>
@@ -134,26 +181,69 @@ export default function Navigation({ session }: NavigationProps) {
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-cfa-card border-t border-cfa-border z-50">
-        <div className="flex items-center justify-around px-2 py-2">
-          {navLinks.map((link) => {
-            const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex flex-col items-center gap-1 px-2 py-1 rounded-lg transition-colors ${
-                  isActive ? 'text-cfa-red' : 'text-cfa-ink-soft hover:text-cfa-ink'
-                }`}
-              >
-                {link.icon}
-                <span className="text-[10px] font-medium">{link.label}</span>
-              </Link>
-            )
-          })}
+      {/* Mobile Top Header */}
+      <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-cfa-card border-b border-cfa-border h-14 flex items-center justify-between px-4">
+        <button
+          onClick={openDrawer}
+          className="p-2 -ml-2 text-cfa-ink-soft hover:text-cfa-ink transition-colors"
+          aria-label="Open menu"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
+        <span className="text-cfa-ink font-bold text-base tracking-tight">My10 Points</span>
+
+        <div className="w-8 h-8 rounded-full bg-cfa-red flex items-center justify-center">
+          <span className="text-white font-semibold text-sm">{user?.name?.charAt(0).toUpperCase() || 'U'}</span>
         </div>
-      </nav>
+      </header>
+
+      {/* Mobile Drawer */}
+      {drawerMounted && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ${drawerVisible ? 'opacity-100' : 'opacity-0'}`}
+            onClick={closeDrawer}
+          />
+
+          {/* Drawer panel */}
+          <div className={`relative w-72 max-w-[85vw] bg-cfa-card h-full flex flex-col shadow-2xl transition-transform duration-300 ease-in-out ${drawerVisible ? 'translate-x-0' : '-translate-x-full'}`}>
+            {/* User info */}
+            <div className="px-6 pt-10 pb-6 border-b border-cfa-border">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full bg-cfa-red flex items-center justify-center flex-shrink-0 shadow-lg shadow-cfa-red/30">
+                  <span className="text-white font-bold text-xl">{user?.name?.charAt(0).toUpperCase() || 'U'}</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-cfa-ink font-bold text-base truncate">{user?.name}</p>
+                  <p className="text-cfa-ink-soft text-sm capitalize">{user?.role}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Nav links */}
+            <nav className="flex-1 px-4 py-5 space-y-1 overflow-y-auto">
+              {desktopAndDrawerLinks}
+            </nav>
+
+            {/* Sign out */}
+            <div className="px-4 py-5 border-t border-cfa-border">
+              <button
+                onClick={() => signOut({ callbackUrl: '/login' })}
+                className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-cfa-ink-soft hover:text-cfa-red hover:bg-cfa-red/10 rounded-xl transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

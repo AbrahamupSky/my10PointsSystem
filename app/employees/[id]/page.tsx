@@ -104,6 +104,7 @@ export default function EmployeeDetailPage() {
     if (tx.type === 'deduct') return tx.category_name || 'Deduction'
     if (tx.type === 'gift_exchange') return tx.gift_name ? `Gift: ${tx.gift_name}` : 'Gift Exchange'
     if (tx.type === 'bounty') return tx.bounty_title ? `Bounty: ${tx.bounty_title}` : 'Bounty'
+    if (tx.type === 'forgiveness') return 'Debt Forgiveness'
     return tx.type
   }
 
@@ -288,7 +289,7 @@ export default function EmployeeDetailPage() {
               <div key={tx.id} className="flex items-start gap-3 p-3 bg-cfa-muted/50 rounded-lg">
                 <div
                   className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
-                    tx.points > 0 ? 'bg-green-500' : 'bg-red-500'
+                    tx.type === 'forgiveness' ? 'bg-teal-500' : tx.points > 0 ? 'bg-green-500' : 'bg-red-500'
                   }`}
                 />
                 <div className="flex-1 min-w-0">

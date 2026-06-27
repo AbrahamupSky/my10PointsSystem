@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
   if (!employee_id) {
     return NextResponse.json({ error: 'Employee is required' }, { status: 400 })
   }
-  if (!type || !['award', 'deduct', 'gift_exchange', 'bounty'].includes(type)) {
+  if (!type || !['award', 'deduct', 'gift_exchange', 'bounty', 'forgiveness'].includes(type)) {
     return NextResponse.json({ error: 'Valid transaction type is required' }, { status: 400 })
   }
   if (points === undefined || points === null) {
@@ -117,6 +117,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Bounty not found or inactive' }, { status: 404 })
     }
     actualPoints = bounty.points_reward
+  }
+
+  if (type === 'forgiveness') {
+    actualPoints = Math.abs(Number(points))
+    if (actualPoints <= 0) {
+      return NextResponse.json({ error: 'Forgiveness points must be greater than zero' }, { status: 400 })
+    }
   }
 
   const insertTransaction = db.transaction(() => {

@@ -113,12 +113,6 @@ export default function LoginPage() {
               )}
             </button>
           </form>
-
-          <div className="mt-4 pt-4 border-t border-cfa-border">
-            <p className="text-xs text-cfa-ink-dim text-center">
-              Default: <span className="text-cfa-ink-soft">admin@my10points.com</span> / <span className="text-cfa-ink-soft">admin123</span>
-            </p>
-          </div>
         </div>
       </div>
     </div>

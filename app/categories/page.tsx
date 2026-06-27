@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { sileo } from 'sileo'
 
 interface Category {
   id: number
@@ -109,10 +110,24 @@ export default function CategoriesPage() {
     fetchCategories()
   }
 
-  async function handleDelete(id: number, name: string) {
-    if (!confirm(`Delete category "${name}"?`)) return
-    const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' })
-    if (res.ok) fetchCategories()
+  function handleDelete(id: number, name: string) {
+    sileo.action({
+      title: `Delete "${name}"?`,
+      description: 'This category will be permanently removed.',
+      duration: null,
+      button: {
+        title: 'Delete',
+        onClick: async () => {
+          const res = await fetch(`/api/categories/${id}`, { method: 'DELETE' })
+          if (res.ok) {
+            fetchCategories()
+            sileo.success({ title: 'Deleted', description: `"${name}" has been removed.` })
+          } else {
+            sileo.error({ title: 'Error', description: 'Failed to delete category.' })
+          }
+        },
+      },
+    })
   }
 
   const awardCategories = categories.filter((c) => c.type === 'award')

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { sileo } from 'sileo'
 
 interface Bounty {
   id: number
@@ -105,10 +106,24 @@ export default function BountiesPage() {
     fetchBounties()
   }
 
-  async function handleDelete(id: number, title: string) {
-    if (!confirm(`Delete bounty "${title}"?`)) return
-    const res = await fetch(`/api/bounties/${id}`, { method: 'DELETE' })
-    if (res.ok) fetchBounties()
+  function handleDelete(id: number, title: string) {
+    sileo.action({
+      title: `Delete "${title}"?`,
+      description: 'This bounty will be permanently removed.',
+      duration: null,
+      button: {
+        title: 'Delete',
+        onClick: async () => {
+          const res = await fetch(`/api/bounties/${id}`, { method: 'DELETE' })
+          if (res.ok) {
+            fetchBounties()
+            sileo.success({ title: 'Deleted', description: `"${title}" has been removed.` })
+          } else {
+            sileo.error({ title: 'Error', description: 'Failed to delete bounty.' })
+          }
+        },
+      },
+    })
   }
 
   function formatDeadline(deadline: string | null) {

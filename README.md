@@ -1,6 +1,6 @@
 # My10 Points System
 
-A full-stack employee points and rewards management system built with Next.js 14. Track employee achievements, award/deduct points, manage gift redemptions, and run time-limited bounty challenges — all with role-based access control and a Chick-fil-A branded UI.
+A full-stack employee points and rewards management system built with Next.js 14. Track employee achievements, award/deduct points, manage gift redemptions, run time-limited bounty challenges, and forgive debts — all with role-based access control and a Chick-fil-A branded UI.
 
 ---
 
@@ -8,15 +8,19 @@ A full-stack employee points and rewards management system built with Next.js 14
 
 - **Dashboard** — live stats and top employee leaderboard
 - **Employees** — searchable list with department/tier filtering, individual profile pages with tier progress bars
-- **Points transactions** — award, deduct, gift exchange, and bounty redemption, all logged atomically
+- **Points transactions** — award, deduct, gift exchange, bounty redemption, and debt forgiveness, all logged atomically
+- **Debt Forgiveness** — reverse a penalty by forgiving points; restores both current *and* lifetime points so the employee's tier is also rewarded
 - **Categories** — customizable award/deduction task types with point values
 - **Gifts** — redeemable rewards with point costs (add, edit, toggle availability)
 - **Bounties** — special point opportunities with deadlines
-- **Transaction log** — full history; admins can edit or delete entries
+- **Transaction log** — full history; admins can edit notes or delete entries
+- **Roster CSV import** — bulk-import employees from a `.csv` file with drag-and-drop preview; supports FOH/BOH departments
+- **User management** — admins can create new user accounts (viewer / manager / admin roles) from the Users page
+- **Toast notifications** — all destructive actions use Sileo action toasts (no browser `confirm()` dialogs)
 - **Lifetime points** — never decrease regardless of deductions or gift exchanges; tier is based on lifetime points only
-- **Role-based access** — admin / manager / viewer permissions
-- **Mobile-friendly** — bottom navigation bar on mobile, sidebar on desktop
-- **Auto light/dark mode** — follows system/iOS appearance setting automatically (no manual toggle)
+- **Role-based access** — admin / manager / viewer permissions enforced on both UI and API
+- **Mobile-friendly** — slide-in left drawer navigation on mobile, persistent sidebar on desktop
+- **Auto dark mode** — follows Apple HIG system colors (`systemBackground`, `secondarySystemBackground`, etc.) via `prefers-color-scheme`
 
 ---
 
@@ -28,6 +32,7 @@ A full-stack employee points and rewards management system built with Next.js 14
 | Database | SQLite via `better-sqlite3` |
 | Auth | NextAuth v4 — JWT sessions, credentials provider |
 | Styling | Tailwind CSS with CFA brand palette |
+| Notifications | Sileo — physics-based toast component |
 | Password hashing | bcryptjs |
 
 ---
@@ -81,15 +86,15 @@ The SQLite database is created automatically at `data/my10points.db` on first ru
 
 | Role | What they can do |
 |------|-----------------|
-| `admin` | Full access — edit/delete transactions, manage all data and users |
-| `manager` | Award points, add employees, manage categories, gifts, and bounties |
+| `admin` | Full access — edit/delete transactions, manage all data, create/manage users |
+| `manager` | Award points, add employees, import rosters, manage categories, gifts, and bounties |
 | `viewer` | Read-only access to all pages |
 
 ---
 
 ## Tier System
 
-Tiers are calculated from **lifetime points only** — deductions and gift exchanges never lower an employee's tier.
+Tiers are calculated from **lifetime points only** — deductions and gift exchanges never lower an employee's tier. Debt forgiveness *does* increase lifetime points, rewarding the employee for earning back good standing.
 
 | Tier | Lifetime Points Required |
 |------|--------------------------|
@@ -111,18 +116,45 @@ Tiers are calculated from **lifetime points only** — deductions and gift excha
 
 ### Redeeming a gift
 
-1. Open an employee's profile and click **Redeem Gift**.
-2. Select a gift from the list — only affordable gifts are shown.
+1. Open an employee's profile and click **Award Points → Gift**.
+2. Select a gift from the list.
 3. The gift cost is deducted from `current_points` (lifetime points are unaffected).
 
 ### Running a bounty
 
 1. Go to **Bounties** and create a new bounty with a point reward and deadline.
-2. From any employee profile, click **Bounty** to award the bounty reward to that employee.
+2. From any New Transaction modal, select **Bounty** and pick the bounty to award it.
+
+### Forgiving a debt
+
+1. Open **New Transaction** (from any employee or the Transactions page).
+2. Select the **Forgive** tab.
+3. Enter the number of points to forgive and add a note explaining the reason.
+4. Confirm — the points are restored to `current_points` **and** added to `lifetime_points`.
+
+### Importing a roster
+
+1. Go to **Employees** and click **Import Roster**.
+2. Drag and drop a `.csv` file or click to browse.
+3. Review the preview table (FOH/BOH color-coded), then click **Import**.
+
+Expected CSV format:
+
+```csv
+Name,Email,Department
+John Smith,john@example.com,FOH
+Jane Doe,,BOH
+```
+
+A sample file is available to download directly from the import dialog.
 
 ### Managing categories
 
-Go to **Categories** to add, edit, or deactivate award and deduction types. Each category has a default point value that pre-fills the award modal.
+Go to **Categories** to add, edit, or deactivate award and deduction types. Each category has a default point value that pre-fills the transaction modal.
+
+### Adding users (admin only)
+
+Go to **Users** (visible only to admins in the sidebar) to create new accounts and assign roles.
 
 ---
 
@@ -131,31 +163,42 @@ Go to **Categories** to add, edit, or deactivate award and deduction types. Each
 ```
 My10PointsApp/
 ├── app/
-│   ├── page.tsx                  # Dashboard
-│   ├── layout.tsx                # Root layout + navigation
+│   ├── page.tsx                      # Dashboard
+│   ├── layout.tsx                    # Root layout + Toaster
 │   ├── login/page.tsx
+│   ├── register/page.tsx             # Admin-only user management
 │   ├── employees/
-│   │   ├── page.tsx              # Employee list
-│   │   ├── new/page.tsx          # Add employee
-│   │   └── [id]/page.tsx         # Employee detail
+│   │   ├── page.tsx                  # Employee list + Import Roster button
+│   │   ├── new/page.tsx              # Add employee
+│   │   └── [id]/page.tsx             # Employee detail
 │   ├── categories/page.tsx
 │   ├── gifts/page.tsx
 │   ├── bounties/page.tsx
 │   ├── transactions/page.tsx
-│   └── api/                      # REST API routes
+│   └── api/
+│       ├── users/route.ts            # GET/POST users (admin only)
+│       ├── employees/
+│       │   ├── route.ts
+│       │   ├── [id]/route.ts
+│       │   └── import/route.ts       # Bulk CSV import
+│       ├── categories/route.ts + [id]/route.ts
+│       ├── gifts/route.ts + [id]/route.ts
+│       ├── bounties/route.ts + [id]/route.ts
+│       └── transactions/route.ts + [id]/route.ts
 ├── components/
-│   ├── Navigation.tsx            # Sidebar + mobile bottom nav
+│   ├── Navigation.tsx                # Sidebar (desktop) + drawer (mobile)
 │   ├── TierBadge.tsx
-│   ├── PointsModal.tsx           # Award/deduct/gift/bounty modal
+│   ├── PointsModal.tsx               # Award/deduct/forgive/gift/bounty modal
+│   ├── ImportModal.tsx               # CSV roster import with preview
 │   └── SessionProviderWrapper.tsx
 ├── lib/
-│   ├── db.ts                     # SQLite init + schema (server only)
-│   ├── tiers.ts                  # getTier() — safe for client components
-│   ├── auth.ts                   # NextAuth config
+│   ├── db.ts                         # SQLite init + schema (server only)
+│   ├── tiers.ts                      # getTier() — safe for client components
+│   ├── auth.ts                       # NextAuth config
 │   └── types.ts
-├── middleware.ts                 # Route protection (all routes except /login)
+├── middleware.ts                     # Route protection (all routes except /login)
 ├── public/cfa-logo.png
-└── data/my10points.db            # Auto-created on first run
+└── data/my10points.db                # Auto-created on first run
 ```
 
 ---
@@ -172,11 +215,22 @@ transactions (id, employee_id, type, category_id, gift_id, bounty_id, points, no
               created_at, created_by, edited_at, edited_by, edit_notes)
 ```
 
+### Transaction types
+
+| Type | Effect on `current_points` | Effect on `lifetime_points` |
+|------|----------------------------|-----------------------------|
+| `award` | + points | + points |
+| `deduct` | − points | no change |
+| `gift_exchange` | − cost | no change |
+| `bounty` | + reward | + reward |
+| `forgiveness` | + points | + points |
+
 ---
 
 ## Roadmap
 
-- [ ] User management page (add/edit/delete users, change roles)
+- [x] User management page (create users, assign roles)
+- [ ] Edit/delete users
 - [ ] Export transactions to CSV
 - [ ] Email notifications when points are awarded
 - [ ] Employee self-service portal

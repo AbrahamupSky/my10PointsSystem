@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
+import { sileo } from 'sileo'
 
 interface Gift {
   id: number
@@ -101,10 +102,24 @@ export default function GiftsPage() {
     fetchGifts()
   }
 
-  async function handleDelete(id: number, name: string) {
-    if (!confirm(`Delete gift "${name}"?`)) return
-    const res = await fetch(`/api/gifts/${id}`, { method: 'DELETE' })
-    if (res.ok) fetchGifts()
+  function handleDelete(id: number, name: string) {
+    sileo.action({
+      title: `Delete "${name}"?`,
+      description: 'This gift will be permanently removed.',
+      duration: null,
+      button: {
+        title: 'Delete',
+        onClick: async () => {
+          const res = await fetch(`/api/gifts/${id}`, { method: 'DELETE' })
+          if (res.ok) {
+            fetchGifts()
+            sileo.success({ title: 'Deleted', description: `"${name}" has been removed.` })
+          } else {
+            sileo.error({ title: 'Error', description: 'Failed to delete gift.' })
+          }
+        },
+      },
+    })
   }
 
   if (loading) {
