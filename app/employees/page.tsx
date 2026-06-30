@@ -47,14 +47,14 @@ export default function EmployeesPage() {
 
   const departments = Array.from(new Set(employees.map((e) => e.department).filter(Boolean))) as string[]
 
-  const tiers = ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond']
+  const tiers = ['Tier 1', 'Tier 2', 'Tier 3', 'Tier 4', 'Tier 5']
 
   function getEmployeeTier(lifetimePoints: number) {
-    if (lifetimePoints >= 10000) return 'Diamond'
-    if (lifetimePoints >= 6000) return 'Platinum'
-    if (lifetimePoints >= 3000) return 'Gold'
-    if (lifetimePoints >= 1000) return 'Silver'
-    return 'Bronze'
+    if (lifetimePoints >= 301) return 'Tier 5'
+    if (lifetimePoints >= 101) return 'Tier 4'
+    if (lifetimePoints >= 41) return 'Tier 3'
+    if (lifetimePoints >= 11) return 'Tier 2'
+    return 'Tier 1'
   }
 
   const filtered = employees.filter((emp) => {

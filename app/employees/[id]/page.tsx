@@ -245,10 +245,10 @@ export default function EmployeeDetailPage() {
           <div className="w-full bg-cfa-muted rounded-full h-2">
             <div
               className={`h-2 rounded-full transition-all ${
-                tierInfo.tier === 'Bronze' ? 'bg-orange-500' :
-                tierInfo.tier === 'Silver' ? 'bg-gray-400' :
-                tierInfo.tier === 'Gold' ? 'bg-yellow-500' :
-                tierInfo.tier === 'Platinum' ? 'bg-purple-500' :
+                tierInfo.tier === 'Tier 1' ? 'bg-orange-500' :
+                tierInfo.tier === 'Tier 2' ? 'bg-green-500' :
+                tierInfo.tier === 'Tier 3' ? 'bg-yellow-500' :
+                tierInfo.tier === 'Tier 4' ? 'bg-purple-500' :
                 'bg-blue-500'
               }`}
               style={{ width: `${Math.min(progressToNext, 100)}%` }}

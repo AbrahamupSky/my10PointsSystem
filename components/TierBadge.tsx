@@ -17,19 +17,19 @@ export default function TierBadge({ lifetimePoints, showPoints = false, size = '
     lg: 'text-base px-3 py-1.5',
   }
 
-  const tierEmoji = {
-    Bronze: '🥉',
-    Silver: '🥈',
-    Gold: '🥇',
-    Platinum: '💎',
-    Diamond: '💠',
+  const tierEmoji: Record<string, string> = {
+    'Tier 1': '⭐',
+    'Tier 2': '⭐⭐',
+    'Tier 3': '⭐⭐⭐',
+    'Tier 4': '⭐⭐⭐⭐',
+    'Tier 5': '⭐⭐⭐⭐⭐',
   }
 
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full border font-semibold ${sizeClasses[size]} ${color} ${bgColor}`}
     >
-      <span>{tierEmoji[tier as keyof typeof tierEmoji]}</span>
+      <span>{tierEmoji[tier] ?? '⭐'}</span>
       <span>{tier}</span>
       {showPoints && <span className="opacity-70">({lifetimePoints.toLocaleString()} pts)</span>}
     </span>

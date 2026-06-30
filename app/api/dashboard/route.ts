@@ -50,11 +50,11 @@ export async function GET() {
   // Tier distribution
   const employees = db.prepare('SELECT lifetime_points FROM employees').all() as { lifetime_points: number }[]
   const tierCounts: Record<string, { count: number; color: string }> = {
-    Bronze: { count: 0, color: 'text-orange-400' },
-    Silver: { count: 0, color: 'text-gray-300' },
-    Gold: { count: 0, color: 'text-yellow-400' },
-    Platinum: { count: 0, color: 'text-purple-400' },
-    Diamond: { count: 0, color: 'text-blue-400' },
+    'Tier 1': { count: 0, color: 'text-orange-400' },
+    'Tier 2': { count: 0, color: 'text-green-400' },
+    'Tier 3': { count: 0, color: 'text-yellow-400' },
+    'Tier 4': { count: 0, color: 'text-purple-400' },
+    'Tier 5': { count: 0, color: 'text-blue-400' },
   }
 
   employees.forEach((emp) => {

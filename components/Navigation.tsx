@@ -152,7 +152,7 @@ export default function Navigation({ session }: NavigationProps) {
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:flex-col md:w-64 md:fixed md:inset-y-0 bg-cfa-card border-r border-cfa-border">
         <div className="flex items-center justify-center px-6 py-4 border-b border-cfa-border">
-          <Image src="/cfa-logo.png" alt="Chick-fil-A" width={160} height={90} className="object-contain" priority />
+          <Image src="/cfa-logo.png" alt="Chick-fil-A" width={80} height={45} className="object-contain" priority />
         </div>
 
         <nav className="flex-1 px-4 py-4 space-y-1 overflow-y-auto">

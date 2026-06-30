@@ -26,8 +26,10 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
 
-  const currentUser = session?.user as { role?: string } | undefined
+  const currentUser = session?.user as { id?: string; role?: string } | undefined
   const isAdmin = currentUser?.role === 'admin'
 
   useEffect(() => {
@@ -46,6 +48,19 @@ export default function RegisterPage() {
         setLoadingUsers(false)
       })
   }, [isAdmin])
+
+  async function handleDelete(userId: number) {
+    setDeletingId(userId)
+    try {
+      const res = await fetch(`/api/users/${userId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setUsers((prev) => prev.filter((u) => u.id !== userId))
+      }
+    } finally {
+      setDeletingId(null)
+      setConfirmDeleteId(null)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -194,22 +209,61 @@ export default function RegisterPage() {
         ) : (
           <div className="divide-y divide-cfa-border/50">
             {users.map((u) => (
-              <div key={u.id} className="flex items-center justify-between px-6 py-3.5">
-                <div>
-                  <p className="text-cfa-ink text-sm font-medium">{u.name}</p>
-                  <p className="text-cfa-ink-soft text-xs">{u.email}</p>
+              <div key={u.id} className="px-6 py-3.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-cfa-ink text-sm font-medium">{u.name}</p>
+                    <p className="text-cfa-ink-soft text-xs">{u.email}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-full border capitalize ${
+                        u.role === 'admin'
+                          ? 'bg-cfa-red/10 text-cfa-red border-cfa-red/30'
+                          : u.role === 'manager'
+                          ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
+                          : 'bg-cfa-muted text-cfa-ink-soft border-cfa-border'
+                      }`}
+                    >
+                      {u.role}
+                    </span>
+                    {String(u.id) !== currentUser?.id && (
+                      <button
+                        onClick={() => setConfirmDeleteId(u.id)}
+                        className="p-1.5 text-cfa-ink-dim hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="Delete user"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <span
-                  className={`text-xs font-semibold px-2.5 py-1 rounded-full border capitalize ${
-                    u.role === 'admin'
-                      ? 'bg-cfa-red/10 text-cfa-red border-cfa-red/30'
-                      : u.role === 'manager'
-                      ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30'
-                      : 'bg-cfa-muted text-cfa-ink-soft border-cfa-border'
-                  }`}
-                >
-                  {u.role}
-                </span>
+
+                {confirmDeleteId === u.id && (
+                  <div className="mt-3 flex items-center gap-3 bg-red-500/5 border border-red-500/20 rounded-lg px-4 py-3">
+                    <p className="text-sm text-cfa-ink flex-1">
+                      Delete <span className="font-semibold">{u.name}</span>? This cannot be undone.
+                    </p>
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-cfa-border text-cfa-ink-soft hover:bg-cfa-muted transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleDelete(u.id)}
+                      disabled={deletingId === u.id}
+                      className="text-xs px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-semibold transition-colors flex items-center gap-1.5"
+                    >
+                      {deletingId === u.id ? (
+                        <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : null}
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
